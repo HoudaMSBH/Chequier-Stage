@@ -11,17 +11,24 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
+
 public class DemandeChequier {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_demande;
+    @Column(name = "id_demande")
+    private Integer idDemande;
 
-    private LocalDateTime date_demande;
+    @Column(name = "date_demande")
+    private LocalDateTime dateDemande;
 
-    private Integer type_chequier; // 25 ou 50
+    @Column(name = "type_chequier")
+    private Integer typeChequier;
 
-    private Integer nombre_chequiers;
+    @Column(name = "nombre_chequiers")
+    private Integer nombreChequiers;
 
     @ManyToOne
     @JoinColumn(name = "id_client")
@@ -38,10 +45,4 @@ public class DemandeChequier {
     @ManyToOne
     @JoinColumn(name = "id_statut")
     private StatutDemande statut;
-
-    @OneToMany(mappedBy = "demande")
-    private List<HistoriqueDemande> historiques;
-
-    @OneToMany(mappedBy = "demande")
-    private List<Notification> notifications;
 }

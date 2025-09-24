@@ -10,15 +10,19 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class MotifRefus {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_motif;
+    @Column(name = "id_motif")
+    private Integer idMotif;
 
     private String libelle;
 
-    private String type_motif; // AUTO ou BANQUIER
+    @Column(name = "type_motif")
+    private String typeMotif; // AUTO ou BANQUIER
 
     @OneToMany(mappedBy = "motif")
     private List<HistoriqueDemande> historiques;

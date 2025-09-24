@@ -10,15 +10,19 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class Notification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_notification;
+    @Column(name = "id_notification")
+    private Integer idNotification;
 
     private String message;
 
-    private LocalDateTime date_notification;
+    @Column(name = "date_notification")
+    private LocalDateTime dateNotification;
 
     @ManyToOne
     @JoinColumn(name = "id_client")

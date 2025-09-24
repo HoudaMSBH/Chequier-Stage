@@ -10,11 +10,14 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class StatutDemande {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_statut;
+    @Column(name = "id_statut")
+    private Integer idStatut;
 
     private String libelle;
 

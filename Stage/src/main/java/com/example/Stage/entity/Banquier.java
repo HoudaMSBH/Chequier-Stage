@@ -10,11 +10,14 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class Banquier {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_banquier;
+    @Column(name = "id_banquier")
+    private Integer idBanquier;
 
     private String nom;
 

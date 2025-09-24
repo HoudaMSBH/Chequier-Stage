@@ -10,13 +10,17 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class HistoriqueDemande {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_historique;
+    @Column(name = "id_historique")
+    private Integer idHistorique;
 
-    private LocalDateTime date_changement;
+    @Column(name = "date_changement")
+    private LocalDateTime dateChangement;
 
     @ManyToOne
     @JoinColumn(name = "id_demande")
@@ -28,15 +32,18 @@ public class HistoriqueDemande {
 
     @ManyToOne
     @JoinColumn(name = "id_banquier")
-    private Banquier banquier; // nullable
+    private Banquier banquier;
 
     @ManyToOne
     @JoinColumn(name = "id_motif")
-    private MotifRefus motif; // nullable
+    private MotifRefus motif;
 
-    private String motif_libelle;
+    @Column(name = "motif_libelle")
+    private String motifLibelle;
 
-    private String type_motif; // AUTO ou BANQUIER
+    @Column(name = "type_motif")
+    private String typeMotif;
 
-    private String motif_libre;
+    @Column(name = "motif_libre", columnDefinition = "TEXT")
+    private String motifLibre;
 }

@@ -11,13 +11,17 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class Compte {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_compte;
+    @Column(name = "id_compte")
+    private Integer idCompte;
 
-    private String numero_compte;
+    @Column(name = "numero_compte")
+    private String numeroCompte;
 
     private BigDecimal solde;
 

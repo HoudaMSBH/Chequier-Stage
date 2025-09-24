@@ -10,17 +10,21 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class Client {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_client;
+    @Column(name = "id_client")
+    private Integer idClient;
 
     private String nom;
 
     private String email;
 
-    private Boolean black_listed;
+    @Column(name = "black_listed")
+    private boolean blackListed;
 
     @ManyToOne
     @JoinColumn(name = "id_agence")

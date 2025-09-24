@@ -10,15 +10,20 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class Agence {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_agence;
+    @Column(name = "id_agence")
+    private Integer idAgence;
 
-    private String nom_agence;
+    @Column(name = "nom_agence")
+    private String nomAgence;
 
-    private String adresse_agence;
+    @Column(name = "adresse_agence")
+    private String adresseAgence;
 
     @OneToMany(mappedBy = "agence")
     private List<Client> clients;
