@@ -14,4 +14,6 @@ public class DemandeChequierResponse {
     private String statut;
     private boolean success;   // true si OK, false si refusé
     private String message;    // message explicatif
+    private String reason;      // ex: "Client blacklisté"
+    private String reasonType;
 }
