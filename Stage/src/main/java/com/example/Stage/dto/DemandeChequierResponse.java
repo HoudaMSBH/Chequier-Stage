@@ -10,6 +10,7 @@ public class DemandeChequierResponse {
     private String clientNom;
     private String numeroCompte;
     private String typeChequier;
+    private Integer nombreChequiers;
     private String agenceNom;
     private String statut;
     private boolean success;   // true si OK, false si refusé

@@ -4,9 +4,10 @@ import lombok.Data;
 
 @Data
 public class DemandeChequierRequest {
-    private Integer clientId;           // ID du client (saisi)
-    private String numeroCompte;        // Numéro du compte (saisi)
+    private Integer clientId;
+    private String numeroCompte;
     private String typeChequier;        // "25" ou "50"
-    private boolean utiliserAgenceClient; // true = agence du client, false = autre agence
-    private String nomAgenceChoisie;    // Nom de l’agence (si != agence du client)
+    private Integer nombreChequiers;
+    private boolean utiliserAgenceClient;
+    private String nomAgenceChoisie;
 }

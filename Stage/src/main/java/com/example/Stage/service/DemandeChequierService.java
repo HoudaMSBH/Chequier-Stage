@@ -110,6 +110,7 @@ public class DemandeChequierService {
         demande.setCompte(compte);
         demande.setDateDemande(LocalDateTime.now());
         demande.setTypeChequier(Integer.parseInt(request.getTypeChequier()));
+        demande.setNombreChequiers(request.getNombreChequiers());
         demande.setAgence(agence);
         demande.setStatut(statut);
 
@@ -126,6 +127,7 @@ public class DemandeChequierService {
                 .clientNom(client.getNom())
                 .numeroCompte(compte.getNumeroCompte())
                 .typeChequier(saved.getTypeChequier().toString())
+                .nombreChequiers(saved.getNombreChequiers())
                 .agenceNom(agence.getNomAgence())
                 .statut(statut.getLibelle())
                 .build();
