@@ -2,17 +2,20 @@ package com.example.Stage.service;
 
 import com.example.Stage.dto.DemandeChequierRequest;
 import com.example.Stage.dto.DemandeChequierResponse;
+import com.example.Stage.dto.UpdateDemandeRequest;
 import com.example.Stage.entity.*;
 import com.example.Stage.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor // Lombok : constructeur avec tous les champs final
+@RequiredArgsConstructor
 public class DemandeChequierService {
 
     private final ClientRepository clientRepo;
@@ -22,6 +25,7 @@ public class DemandeChequierService {
     private final StatutDemandeRepository statutRepo;
     private final HistoriqueDemandeRepository historiqueDemandeRepository;
     private final MotifRefusRepository motifRefusRepository;
+    private final BanquierRepository banquierRepo;
 
     //////////////////////////////////////////////////////////////////////////////
     //  Créer une demande de chéquier
@@ -134,53 +138,171 @@ public class DemandeChequierService {
     }
 
     //////////////////////////////////////////////////////////////////////////////
-    // Récupérer toutes les demandes
+    // --- Récupérer toutes les demandes ---
     public List<DemandeChequierResponse> getAllDemandes() {
         return demandeRepo.findAll().stream()
-                .map(d -> DemandeChequierResponse.builder()
-                        .demandeId(d.getIdDemande())
-                        .clientNom(d.getClient().getNom())
-                        .numeroCompte(d.getCompte().getNumeroCompte())
-                        .typeChequier(d.getTypeChequier().toString())
-                        .agenceNom(d.getAgence().getNomAgence())
-                        .statut(d.getStatut().getLibelle())
-                        .success(true)
-                        .build())
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    //////////////////////////////////////////////////////////////////////////////
-    // Récupérer une demande par ID
+    // --- Récupérer demandes par client ---
+    public List<DemandeChequierResponse> getDemandesByClientId(Integer clientId) {
+        return demandeRepo.findByClientId(clientId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // --- Récupérer demande par id ---
     public DemandeChequierResponse getDemandeById(Integer id) {
-        DemandeChequier d = demandeRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Demande introuvable"));
+        return demandeRepo.findById(id)
+                .map(this::mapToResponse)
+                .orElse(null);
+    }
+
+    // --- Traiter une demande (valider, refuser, changer statut) ---
+    public DemandeChequierResponse traiterDemande(UpdateDemandeRequest request, Integer banquierId) {
+        Optional<DemandeChequier> optDemande = demandeRepo.findById(request.getDemandeId());
+        if (!optDemande.isPresent()) {
+            return DemandeChequierResponse.builder()
+                    .success(false)
+                    .message("Demande non trouvée")
+                    .build();
+        }
+
+        DemandeChequier demande = optDemande.get();
+
+        Banquier banquier = banquierRepo.findById(banquierId).orElse(null);
+
+        switch (request.getAction()) {
+
+            case "VALIDER":
+                StatutDemande statutCommande = statutRepo.findByLibelle("Commandé").orElse(null);
+                if (statutCommande != null) {
+                    // Mettre à jour la demande avec le nouveau statut
+                    demande.setStatut(statutCommande);
+                    demandeRepo.save(demande);
+
+                    // 2réer l'historique pour la validation
+                    HistoriqueDemande histValider = new HistoriqueDemande();
+                    histValider.setDateChangement(LocalDateTime.now());
+                    histValider.setDemande(demande);
+                    histValider.setStatut(statutCommande);
+                    histValider.setBanquier(banquier);
+                    historiqueDemandeRepository.save(histValider);
+                }
+                break;
+
+            case "REFUSER":
+                StatutDemande statutRefuse = statutRepo.findByLibelle("Refusé banquier").orElse(null);
+
+                if (statutRefuse != null) {
+                    // Mettre à jour le statut de la demande au lieu de la supprimer
+                    demande.setStatut(statutRefuse);
+                    demandeRepo.save(demande);
+
+                    // Créer l'historique pour le refus
+                    HistoriqueDemande histRefus = new HistoriqueDemande();
+                    histRefus.setDateChangement(LocalDateTime.now());
+                    histRefus.setDemande(demande); // On garde le lien avec la demande
+                    histRefus.setStatut(statutRefuse);
+                    histRefus.setBanquier(banquier);
+                    histRefus.setTypeMotif("BANQUIER");
+
+
+                    if (request.getMotifId() != null) {
+                        motifRefusRepository.findById(request.getMotifId()).ifPresent(m -> {
+                            histRefus.setMotif(m);
+                            histRefus.setMotifLibelle(m.getLibelle());
+                            histRefus.setTypeMotif(m.getTypeMotif());
+                        });
+                    }
+                    if (request.getMotifLibre() != null && !request.getMotifLibre().trim().isEmpty()) {
+                        histRefus.setMotifLibre(request.getMotifLibre());
+                    }
+
+                    historiqueDemandeRepository.save(histRefus);
+
+                    // Retourner la réponse avec le statut refusé
+                    return DemandeChequierResponse.builder()
+                            .demandeId(demande.getIdDemande())
+                            .clientNom(demande.getClient().getNom())
+                            .numeroCompte(demande.getCompte().getNumeroCompte())
+                            .typeChequier(demande.getTypeChequier() + " chèques")
+                            .nombreChequiers(demande.getNombreChequiers())
+                            .agenceNom(demande.getAgence().getNomAgence())
+                            .statut(statutRefuse.getLibelle())
+                            .success(true)
+                            .build();
+                }
+                break;
+
+
+
+            case "CHANGER_STATUT":
+                String current = demande.getStatut().getLibelle();
+                StatutDemande nouveauStatut = null;
+                if ("Commandé".equals(current)) {
+                    nouveauStatut = statutRepo.findByLibelle("Prêt").orElse(null);
+                } else if ("Prêt".equals(current)) {
+                    nouveauStatut = statutRepo.findByLibelle("Remis").orElse(null);
+                }
+
+                if (nouveauStatut != null) {
+                    demande.setStatut(nouveauStatut);
+                    demandeRepo.save(demande);
+
+                    HistoriqueDemande histChangement = new HistoriqueDemande();
+                    histChangement.setDateChangement(LocalDateTime.now());
+                    histChangement.setDemande(demande);
+                    histChangement.setStatut(nouveauStatut);
+                    histChangement.setBanquier(banquier);
+                    historiqueDemandeRepository.save(histChangement);
+                }
+                break;
+        }
+
+        return mapToResponse(demande);
+    }
+
+    // --- Mapper pour DTO ---
+    private DemandeChequierResponse mapToResponse(DemandeChequier demande) {
+        // sécurités null
+        String clientNom = demande.getClient() != null ? demande.getClient().getNom() : null;
+        String clientEmail = demande.getClient() != null ? demande.getClient().getEmail() : null;
+        Boolean clientBlackListed = demande.getClient() != null ? demande.getClient().isBlackListed() : false;
+
+        String numeroCompte = demande.getCompte() != null ? demande.getCompte().getNumeroCompte() : null;
+
+        BigDecimal solde = (demande.getCompte() != null && demande.getCompte().getSolde() != null)
+                ? demande.getCompte().getSolde()
+                : BigDecimal.ZERO;
+
+        Boolean compteBloque = demande.getCompte() != null ? demande.getCompte().getBloque() : false;
+
+        String agenceNom = demande.getAgence() != null ? demande.getAgence().getNomAgence() : null;
+        String agenceClient = (demande.getClient() != null && demande.getClient().getAgence() != null)
+                ? demande.getClient().getAgence().getNomAgence()
+                : null;
+
+        String dateDemande = demande.getDateDemande() != null ? demande.getDateDemande().toString() : null;
 
         return DemandeChequierResponse.builder()
-                .demandeId(d.getIdDemande())
-                .clientNom(d.getClient().getNom())
-                .numeroCompte(d.getCompte().getNumeroCompte())
-                .typeChequier(d.getTypeChequier().toString())
-                .agenceNom(d.getAgence().getNomAgence())
-                .statut(d.getStatut().getLibelle())
+                .demandeId(demande.getIdDemande())
+                .clientNom(clientNom)
+                .clientEmail(clientEmail)
+                .clientBlackListed(clientBlackListed)
+                .numeroCompte(numeroCompte)
+                .solde(solde) // <-- garder BigDecimal directement
+                .compteBloque(compteBloque)
+                .typeChequier(demande.getTypeChequier() + " chèques")
+                .nombreChequiers(demande.getNombreChequiers())
+                .agenceNom(agenceNom)
+                .agenceClient(agenceClient)
+                .dateDemande(demande.getDateDemande())
+                .statut(demande.getStatut() != null ? demande.getStatut().getLibelle() : null)
                 .success(true)
                 .build();
     }
 
-    //////////////////////////////////////////////////////////////////////////////
-    // Récupérer toutes les demandes d'un client
-    public List<DemandeChequierResponse> getDemandesByClientId(Integer clientId) {
-        List<DemandeChequier> demandes = demandeRepo.findByClientId(clientId);
 
-        return demandes.stream()
-                .map(d -> DemandeChequierResponse.builder()
-                        .demandeId(d.getIdDemande())
-                        .clientNom(d.getClient().getNom())
-                        .numeroCompte(d.getCompte().getNumeroCompte())
-                        .typeChequier(d.getTypeChequier().toString())
-                        .agenceNom(d.getAgence().getNomAgence())
-                        .statut(d.getStatut().getLibelle())
-                        .success(true)
-                        .build())
-                .collect(Collectors.toList());
-    }
 }
