@@ -26,6 +26,7 @@ public class DemandeChequierService {
     private final HistoriqueDemandeRepository historiqueDemandeRepository;
     private final MotifRefusRepository motifRefusRepository;
     private final BanquierRepository banquierRepo;
+    private final NotificationService notificationService; // <-- ajouté
 
     //////////////////////////////////////////////////////////////////////////////
     //  Créer une demande de chéquier
@@ -97,6 +98,10 @@ public class DemandeChequierService {
 
             historiqueDemandeRepository.save(historique);
 
+            // --- Notification ---
+            notificationService.envoyerNotification(client, null,
+                    "Demande de chéquier refusée automatiquement (Blacklisté ou compte bloqué)");
+
             return DemandeChequierResponse.builder()
                     .success(false)
                     .message("Client ou compte non éligible (Blacklisté ou compte bloqué)")
@@ -123,6 +128,10 @@ public class DemandeChequierService {
         // Lier historique à la demande
         historique.setDemande(saved);
         historiqueDemandeRepository.save(historique);
+
+        // --- Notification ---
+        notificationService.envoyerNotification(client, saved,
+                "Demande de chéquier créée avec succès. Statut: " + statut.getLibelle());
 
         return DemandeChequierResponse.builder()
                 .success(true)
@@ -179,17 +188,19 @@ public class DemandeChequierService {
             case "VALIDER":
                 StatutDemande statutCommande = statutRepo.findByLibelle("Commandé").orElse(null);
                 if (statutCommande != null) {
-                    // Mettre à jour la demande avec le nouveau statut
                     demande.setStatut(statutCommande);
                     demandeRepo.save(demande);
 
-                    // 2réer l'historique pour la validation
                     HistoriqueDemande histValider = new HistoriqueDemande();
                     histValider.setDateChangement(LocalDateTime.now());
                     histValider.setDemande(demande);
                     histValider.setStatut(statutCommande);
                     histValider.setBanquier(banquier);
                     historiqueDemandeRepository.save(histValider);
+
+                    // --- Notification ---
+                    notificationService.envoyerNotification(demande.getClient(), demande,
+                            "Votre demande de chéquier a été validée. Statut: " + statutCommande.getLibelle());
                 }
                 break;
 
@@ -206,15 +217,12 @@ public class DemandeChequierService {
                     histRefus.setStatut(statutRefuse);
                     histRefus.setBanquier(banquier);
 
-                    // ---- Gestion des motifs ----
                     if (request.getMotifLibre() != null && !request.getMotifLibre().trim().isEmpty()) {
-                        // Motif libre prioritaire si texte fourni
                         histRefus.setMotif(null);
                         histRefus.setMotifLibelle(null);
                         histRefus.setMotifLibre(request.getMotifLibre().trim());
                         histRefus.setTypeMotif("BANQUIER");
                     } else if (request.getMotifId() != null && request.getMotifId() > 0) {
-                        // Motif prédéfini
                         motifRefusRepository.findById(request.getMotifId()).ifPresent(m -> {
                             histRefus.setMotif(m);
                             histRefus.setMotifLibelle(m.getLibelle());
@@ -222,7 +230,6 @@ public class DemandeChequierService {
                             histRefus.setTypeMotif(m.getTypeMotif());
                         });
                     } else {
-                        // Aucun motif
                         histRefus.setMotif(null);
                         histRefus.setMotifLibelle(null);
                         histRefus.setMotifLibre("Motif non spécifié");
@@ -230,6 +237,10 @@ public class DemandeChequierService {
                     }
 
                     historiqueDemandeRepository.save(histRefus);
+
+                    // --- Notification ---
+                    notificationService.envoyerNotification(demande.getClient(), demande,
+                            "Votre demande de chéquier a été refusée. Statut: " + statutRefuse.getLibelle());
 
                     return DemandeChequierResponse.builder()
                             .demandeId(demande.getIdDemande())
@@ -243,7 +254,6 @@ public class DemandeChequierService {
                             .build();
                 }
                 break;
-
 
             case "CHANGER_STATUT":
                 String current = demande.getStatut().getLibelle();
@@ -264,6 +274,10 @@ public class DemandeChequierService {
                     histChangement.setStatut(nouveauStatut);
                     histChangement.setBanquier(banquier);
                     historiqueDemandeRepository.save(histChangement);
+
+                    // --- Notification ---
+                    notificationService.envoyerNotification(demande.getClient(), demande,
+                            "Statut de votre demande de chéquier mis à jour : " + nouveauStatut.getLibelle());
                 }
                 break;
         }
@@ -273,25 +287,18 @@ public class DemandeChequierService {
 
     // --- Mapper pour DTO ---
     private DemandeChequierResponse mapToResponse(DemandeChequier demande) {
-        // sécurités null
         String clientNom = demande.getClient() != null ? demande.getClient().getNom() : null;
         String clientEmail = demande.getClient() != null ? demande.getClient().getEmail() : null;
         Boolean clientBlackListed = demande.getClient() != null ? demande.getClient().isBlackListed() : false;
-
         String numeroCompte = demande.getCompte() != null ? demande.getCompte().getNumeroCompte() : null;
-
         BigDecimal solde = (demande.getCompte() != null && demande.getCompte().getSolde() != null)
                 ? demande.getCompte().getSolde()
                 : BigDecimal.ZERO;
-
         Boolean compteBloque = demande.getCompte() != null ? demande.getCompte().getBloque() : false;
-
         String agenceNom = demande.getAgence() != null ? demande.getAgence().getNomAgence() : null;
         String agenceClient = (demande.getClient() != null && demande.getClient().getAgence() != null)
                 ? demande.getClient().getAgence().getNomAgence()
                 : null;
-
-        String dateDemande = demande.getDateDemande() != null ? demande.getDateDemande().toString() : null;
 
         return DemandeChequierResponse.builder()
                 .demandeId(demande.getIdDemande())
@@ -299,7 +306,7 @@ public class DemandeChequierService {
                 .clientEmail(clientEmail)
                 .clientBlackListed(clientBlackListed)
                 .numeroCompte(numeroCompte)
-                .solde(solde) // <-- garder BigDecimal directement
+                .solde(solde)
                 .compteBloque(compteBloque)
                 .typeChequier(demande.getTypeChequier() + " chèques")
                 .nombreChequiers(demande.getNombreChequiers())
@@ -310,6 +317,4 @@ public class DemandeChequierService {
                 .success(true)
                 .build();
     }
-
-
 }

@@ -1,25 +1,33 @@
 package com.example.Stage.service;
 
+import com.example.Stage.entity.Client;
+import com.example.Stage.entity.DemandeChequier;
 import com.example.Stage.entity.Notification;
+import org.springframework.mail.javamail.JavaMailSender;
 import com.example.Stage.repository.NotificationRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
 
-    private final NotificationRepository notificationRepo;
+    private final NotificationRepository notificationRepository;
 
-    public NotificationService(NotificationRepository notificationRepo) {
-        this.notificationRepo = notificationRepo;
-    }
+    public void envoyerNotification(Client client, DemandeChequier demande, String message) {
+        if (client == null) return;
 
-    public List<Notification> getAllNotifications() {
-        return notificationRepo.findAll();
-    }
+        Notification notif = new Notification();
+        notif.setClient(client);
+        notif.setDemande(demande);
+        notif.setMessage(message);
+        notif.setDateNotification(LocalDateTime.now());
 
-    public Notification saveNotification(Notification notification) {
-        return notificationRepo.save(notification);
+        notificationRepository.save(notif);
+
+        // Optionnel : log pour vérification console
+        System.out.println("Notification envoyée à " + client.getNom() + ": " + message);
     }
 }

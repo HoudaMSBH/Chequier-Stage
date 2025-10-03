@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Chequier-Stage.iml" filepath="$PROJECT_DIR$/.idea/Chequier-Stage.iml" />
-      <module fileurl="file://$PROJECT_DIR$/Stage/Stage.iml" filepath="$PROJECT_DIR$/Stage/Stage.iml" />
     </modules>
   </component>
 </project>
