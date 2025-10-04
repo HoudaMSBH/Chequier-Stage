@@ -60,8 +60,7 @@ public class DemandeChequierController {
     // Body attendu (JSON) : { "motifId": 2 }  ou { "motif": "Motif libre ..." }
     public static class RefusRequest {
         public Integer motifId;
-        public String motif; // motif libre
-        // Jackson va binder les champs publics automatiquement
+        public String motif; // motif libre4
     }
 
     @PutMapping("/{id}/refuser")
@@ -73,6 +72,10 @@ public class DemandeChequierController {
             if (body.motifId != null) req.setMotifId(body.motifId);
             if (body.motif != null && !body.motif.trim().isEmpty()) req.setMotifLibre(body.motif.trim());
         }
+
+// 🔹 Vérification du motif libre
+        System.out.println("Motif libre reçu côté back : " + req.getMotifLibre());
+
         Integer banquierId = 1; // TODO: récupérer l'id réel
         return demandeService.traiterDemande(req, banquierId);
     }

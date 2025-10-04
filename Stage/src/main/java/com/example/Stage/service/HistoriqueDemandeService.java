@@ -13,15 +13,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class HistoriqueDemandeService {
 
-    private final HistoriqueDemandeRepository historiqueRepo;
+    private final HistoriqueDemandeRepository historiqueDemandeRepository;
 
     public List<HistoriqueResponse> getAllHistorique() {
-        return historiqueRepo.findAll().stream()
-                .map(this::mapToDto)
+        return historiqueDemandeRepository.findAll()
+                .stream()
+                .map(this::mapHistorique)
                 .collect(Collectors.toList());
     }
 
-    private HistoriqueResponse mapToDto(HistoriqueDemande h) {
+    private HistoriqueResponse mapHistorique(HistoriqueDemande h) {
         return new HistoriqueResponse(
                 h.getIdHistorique(),
                 h.getDateChangement(),

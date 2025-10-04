@@ -161,6 +161,7 @@ public class DemandeChequierService {
 
     // --- Traiter une demande (valider, refuser, changer statut) ---
     public DemandeChequierResponse traiterDemande(UpdateDemandeRequest request, Integer banquierId) {
+        System.out.println("MotifLibre reçu : " + request.getMotifLibre());
         Optional<DemandeChequier> optDemande = demandeRepo.findById(request.getDemandeId());
         if (!optDemande.isPresent()) {
             return DemandeChequierResponse.builder()
@@ -196,33 +197,40 @@ public class DemandeChequierService {
                 StatutDemande statutRefuse = statutRepo.findByLibelle("Refusé banquier").orElse(null);
 
                 if (statutRefuse != null) {
-                    // Mettre à jour le statut de la demande au lieu de la supprimer
                     demande.setStatut(statutRefuse);
                     demandeRepo.save(demande);
 
-                    // Créer l'historique pour le refus
                     HistoriqueDemande histRefus = new HistoriqueDemande();
                     histRefus.setDateChangement(LocalDateTime.now());
-                    histRefus.setDemande(demande); // On garde le lien avec la demande
+                    histRefus.setDemande(demande);
                     histRefus.setStatut(statutRefuse);
                     histRefus.setBanquier(banquier);
-                    histRefus.setTypeMotif("BANQUIER");
 
-
-                    if (request.getMotifId() != null) {
+                    // ---- Gestion des motifs ----
+                    if (request.getMotifLibre() != null && !request.getMotifLibre().trim().isEmpty()) {
+                        // Motif libre prioritaire si texte fourni
+                        histRefus.setMotif(null);
+                        histRefus.setMotifLibelle(null);
+                        histRefus.setMotifLibre(request.getMotifLibre().trim());
+                        histRefus.setTypeMotif("BANQUIER");
+                    } else if (request.getMotifId() != null && request.getMotifId() > 0) {
+                        // Motif prédéfini
                         motifRefusRepository.findById(request.getMotifId()).ifPresent(m -> {
                             histRefus.setMotif(m);
                             histRefus.setMotifLibelle(m.getLibelle());
+                            histRefus.setMotifLibre(null);
                             histRefus.setTypeMotif(m.getTypeMotif());
                         });
-                    }
-                    if (request.getMotifLibre() != null && !request.getMotifLibre().trim().isEmpty()) {
-                        histRefus.setMotifLibre(request.getMotifLibre());
+                    } else {
+                        // Aucun motif
+                        histRefus.setMotif(null);
+                        histRefus.setMotifLibelle(null);
+                        histRefus.setMotifLibre("Motif non spécifié");
+                        histRefus.setTypeMotif("BANQUIER");
                     }
 
                     historiqueDemandeRepository.save(histRefus);
 
-                    // Retourner la réponse avec le statut refusé
                     return DemandeChequierResponse.builder()
                             .demandeId(demande.getIdDemande())
                             .clientNom(demande.getClient().getNom())
@@ -235,7 +243,6 @@ public class DemandeChequierService {
                             .build();
                 }
                 break;
-
 
 
             case "CHANGER_STATUT":
