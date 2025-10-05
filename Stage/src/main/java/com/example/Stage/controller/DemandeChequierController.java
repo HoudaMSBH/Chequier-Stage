@@ -12,11 +12,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/demandes")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:4200")
 public class DemandeChequierController {
 
     private final DemandeChequierService demandeService;
 
-    // Créer une nouvelle demande
     @PostMapping
     public DemandeChequierResponse creerDemande(@RequestBody DemandeChequierRequest request) {
         DemandeChequierResponse response = demandeService.creerDemande(request);
@@ -26,45 +26,40 @@ public class DemandeChequierController {
         return response;
     }
 
-    // Récupérer toutes les demandes
     @GetMapping
     public List<DemandeChequierResponse> getAllDemandes() {
         return demandeService.getAllDemandes();
     }
 
-    // Récupérer une demande par ID
     @GetMapping("/{id}")
     public DemandeChequierResponse getDemandeById(@PathVariable Integer id) {
         return demandeService.getDemandeById(id);
     }
 
-    // Récupérer toutes les demandes d'un client
     @GetMapping("/client/{clientId}")
     public List<DemandeChequierResponse> getDemandesByClient(@PathVariable Integer clientId) {
         return demandeService.getDemandesByClientId(clientId);
     }
 
-
-
-    // Valider : PUT /api/demandes/{id}/valider
     @PutMapping("/{id}/valider")
-    public DemandeChequierResponse validerDemande(@PathVariable Integer id) {
+    public DemandeChequierResponse validerDemande(@PathVariable Integer id, @RequestParam Integer banquierId) {
         UpdateDemandeRequest req = new UpdateDemandeRequest();
         req.setDemandeId(id);
         req.setAction("VALIDER");
-        Integer banquierId = 1; // TODO: récupérer l'id réel
         return demandeService.traiterDemande(req, banquierId);
     }
 
-    // Refuser : PUT /api/demandes/{id}/refuser
-    // Body attendu (JSON) : { "motifId": 2 }  ou { "motif": "Motif libre ..." }
     public static class RefusRequest {
         public Integer motifId;
-        public String motif; // motif libre4
+        public String motif;
     }
 
     @PutMapping("/{id}/refuser")
-    public DemandeChequierResponse refuserDemande(@PathVariable Integer id, @RequestBody RefusRequest body) {
+    public DemandeChequierResponse refuserDemande(
+            @PathVariable Integer id,
+            @RequestBody RefusRequest body,
+            @RequestParam Integer banquierId) {
+
         UpdateDemandeRequest req = new UpdateDemandeRequest();
         req.setDemandeId(id);
         req.setAction("REFUSER");
@@ -72,21 +67,15 @@ public class DemandeChequierController {
             if (body.motifId != null) req.setMotifId(body.motifId);
             if (body.motif != null && !body.motif.trim().isEmpty()) req.setMotifLibre(body.motif.trim());
         }
-
-// 🔹 Vérification du motif libre
         System.out.println("Motif libre reçu côté back : " + req.getMotifLibre());
-
-        Integer banquierId = 1; // TODO: récupérer l'id réel
         return demandeService.traiterDemande(req, banquierId);
     }
 
-    // Changer statut : PUT /api/demandes/{id}/changer-statut
     @PutMapping("/{id}/changer-statut")
-    public DemandeChequierResponse changerStatutDemande(@PathVariable Integer id) {
+    public DemandeChequierResponse changerStatutDemande(@PathVariable Integer id, @RequestParam Integer banquierId) {
         UpdateDemandeRequest req = new UpdateDemandeRequest();
         req.setDemandeId(id);
         req.setAction("CHANGER_STATUT");
-        Integer banquierId = 1; // TODO: récupérer l'id réel
         return demandeService.traiterDemande(req, banquierId);
     }
 }
