@@ -3,7 +3,6 @@ package com.example.Stage.service;
 import com.example.Stage.entity.Client;
 import com.example.Stage.entity.DemandeChequier;
 import com.example.Stage.entity.Notification;
-import org.springframework.mail.javamail.JavaMailSender;
 import com.example.Stage.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
