@@ -26,7 +26,7 @@ public class DemandeChequierService {
     private final HistoriqueDemandeRepository historiqueDemandeRepository;
     private final MotifRefusRepository motifRefusRepository;
     private final BanquierRepository banquierRepo;
-    private final NotificationService notificationService; // <-- ajouté
+
 
     //////////////////////////////////////////////////////////////////////////////
     //  Créer une demande de chéquier
@@ -98,9 +98,7 @@ public class DemandeChequierService {
 
             historiqueDemandeRepository.save(historique);
 
-            // --- Notification ---
-            notificationService.envoyerNotification(client, null,
-                    "Demande de chéquier refusée automatiquement (Blacklisté ou compte bloqué)");
+
 
             return DemandeChequierResponse.builder()
                     .success(false)
@@ -129,9 +127,6 @@ public class DemandeChequierService {
         historique.setDemande(saved);
         historiqueDemandeRepository.save(historique);
 
-        // --- Notification ---
-        notificationService.envoyerNotification(client, saved,
-                "Demande de chéquier créée avec succès. Statut: " + statut.getLibelle());
 
         return DemandeChequierResponse.builder()
                 .success(true)
@@ -198,9 +193,7 @@ public class DemandeChequierService {
                     histValider.setBanquier(banquier);
                     historiqueDemandeRepository.save(histValider);
 
-                    // --- Notification ---
-                    notificationService.envoyerNotification(demande.getClient(), demande,
-                            "Votre demande de chéquier a été validée. Statut: " + statutCommande.getLibelle());
+
                 }
                 break;
 
@@ -238,9 +231,7 @@ public class DemandeChequierService {
 
                     historiqueDemandeRepository.save(histRefus);
 
-                    // --- Notification ---
-                    notificationService.envoyerNotification(demande.getClient(), demande,
-                            "Votre demande de chéquier a été refusée. Statut: " + statutRefuse.getLibelle());
+
 
                     return DemandeChequierResponse.builder()
                             .demandeId(demande.getIdDemande())
@@ -275,9 +266,7 @@ public class DemandeChequierService {
                     histChangement.setBanquier(banquier);
                     historiqueDemandeRepository.save(histChangement);
 
-                    // --- Notification ---
-                    notificationService.envoyerNotification(demande.getClient(), demande,
-                            "Statut de votre demande de chéquier mis à jour : " + nouveauStatut.getLibelle());
+
                 }
                 break;
         }
