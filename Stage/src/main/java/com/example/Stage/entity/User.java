@@ -21,7 +21,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    // lien vers Banquier (un utilisateur correspond à un banquier)
+    // lien vers Banquier (un user = banquier)
     @OneToOne
     @JoinColumn(name = "id_banquier")
     private Banquier banquier;

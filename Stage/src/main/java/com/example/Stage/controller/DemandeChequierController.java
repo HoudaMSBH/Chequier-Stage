@@ -26,7 +26,7 @@ public class DemandeChequierController {
         return response;
     }
 
-    @GetMapping
+    @GetMapping("/getAll")
     public List<DemandeChequierResponse> getAllDemandes() {
         return demandeService.getAllDemandes();
     }

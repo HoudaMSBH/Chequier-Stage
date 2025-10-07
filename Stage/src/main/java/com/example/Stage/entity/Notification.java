@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Getter
 @Setter
-public class Notification {
+public class Notification { //Mail hog
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

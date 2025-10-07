@@ -15,7 +15,7 @@ public class ClientService {
 
     private final ClientRepository clientRepository;
 
-    // 🔹 Fonction utilitaire pour mapper un Client en ClientResponse
+    //  Fonction utilitaire pour mapper un Client en ClientResponse
     private ClientResponse mapToResponse(Client client) {
         return new ClientResponse(
                 client.getIdClient(),

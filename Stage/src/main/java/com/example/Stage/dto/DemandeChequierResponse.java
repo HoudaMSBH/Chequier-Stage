@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@Builder // Permet d'utiliser DemandeChequierResponse.builder()
+@Builder
 @NoArgsConstructor
-@AllArgsConstructor // constructeur public avec tous les champs
+@AllArgsConstructor
 public class DemandeChequierResponse {
     private Integer demandeId;
     private String clientNom;
